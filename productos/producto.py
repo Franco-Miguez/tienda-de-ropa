@@ -11,6 +11,12 @@ class Producto():
         self.__stock = stock
         self.__descripcion = descripcion
     
+    def agregar_stock(self, numero : int):
+        self.__stock += numero
+    
+    def set_stock(self, nuevo_stock):
+        self.__stock = nuevo_stock
+    
     def get_codigo(self):
         return self.__codigo
     
