@@ -2,22 +2,23 @@
 class ProductoCarrito():
     def __init__(
                     self, codigo : str , descripcion : str,
-                    precio : float, cantidad : int, talle : str | None = None,
-                    genero : str |  None = None, material : str | None = None,
+                    precio : float, cantidad : int, tipo_producto : bool, talle = "" ,
+                    genero = "", material = "",
                     descuento = 0
                 ) -> None:
         """
         Args:
             descuento (int, optional): descuento es de 0 a 100 indica el %
+            tipo_producto (bool): True = Ropa, False = Accesorio
         """
         self.codigo = codigo
-        self.descricion = descripcion
+        self.descripcion = descripcion
         self.precio = precio
         self.cantidad = cantidad
         self.talle = talle
         self.genero = genero
         self.material = material
-        self.tipo_producto = "Ropa" if talle else "Accesorio"
+        self.tipo_producto = "Ropa" if tipo_producto else "Accesorio"
         self.descuento = descuento
     
     def modificar_cantidad(self, cantidad : int):

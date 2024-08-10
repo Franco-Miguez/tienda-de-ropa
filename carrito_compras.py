@@ -6,18 +6,43 @@ class CarritoCompras():
     def __init__(self) -> None:
         self.carrito = []
     
-    def agregar(self, producto : object):
-        for articulo in self.carrito:           
-            if articulo.get_info().get("Codigo") == producto.get_info().get("Codigo"):
-                nuevo_valor =  articulo.get_info().get("Stock") + producto.get_info().get("Stock")
+    def agregar(self, producto : object, cantidad : int):
+        info = producto.get_info() 
+        codigo = info.get("Codigo")
+        descripcion = info.get("Descripcion")
+        precio = info.get("Precio")
+        nuevo_producto = ProductoCarrito(codigo, descripcion, precio, cantidad, True)
+        
+        if type(producto) == type(Ropa("","","")):
+            talle = info.get("Talle")
+            genero = info.get("Genero")
+            nuevo_producto.talle = talle
+            nuevo_producto.genero = genero 
+        elif type(producto) == type(Accesorio("","")):
+            material = info.get("Material")
+            nuevo_producto.tipo_producto = "Accesorio"
+            nuevo_producto.material = material
+
+        for articulo in self.carrito:
+            if nuevo_producto.codigo == articulo.codigo:
                 indice = self.carrito.index(articulo)
-                self.carrito[indice].set_stock(nuevo_valor) 
+                self.carrito[indice].cantidad += nuevo_producto.cantidad
                 return None
-        self.carrito.append(producto)
+        
+        self.carrito.append(nuevo_producto)
+        
 
     def mostrar(self):
         for producto in self.carrito:
-            print(producto.get_info())
+            print(f"\n\nCodigo: {producto.codigo}")
+            print(f"Nombre: {producto.descripcion}")
+            print(f"Cantiad: {producto.cantidad}")
+            print(f"Descuento: {producto.descuento}%")
+            if producto.tipo_producto == "Ropa":
+                print(f"Talle: {producto.codigo}")
+                print(f"Genero: {producto.codigo}")
+            elif producto.tipo_producto == "Accesorio":
+                print(f"Material: {producto.material}")
     
     def remover(self, codigo : str):
         for producto in self.carrito:
@@ -30,11 +55,9 @@ class CarritoCompras():
 
 if __name__ == "__main__":
     carrito = CarritoCompras()
-    carrito.agregar(Ropa("001","XL","Masculino",stock=5))
-    carrito.agregar(Ropa("001","XL","Masculino",stock=3))
-    carrito.agregar(Ropa("002","XL","Masculino"))
-    carrito.agregar(Ropa("003","XL","Masculino"))
-    carrito.agregar(Ropa("004","XL","Masculino"))
+    carrito.agregar(Ropa("001","XL","Masculino",stock=5, descripcion="Remera"),5)
+    carrito.agregar(Ropa("001","XL","Masculino",stock=3),3)
+    carrito.agregar(Accesorio("002", material="Oro", descripcion="reloj"),1)
     print(carrito.cantidad())
     carrito.mostrar()
     #print(carrito.cantidad())

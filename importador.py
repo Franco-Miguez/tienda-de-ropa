@@ -4,7 +4,7 @@ from productos.accesorio import Accesorio
 
 class Importador():
     @classmethod
-    def importar(cls, ruta : str):
+    def importar(cls, ruta : str) -> list[object]:
         with open(ruta, newline="") as archivo:
             info = csv.DictReader(archivo)
             lista = []
