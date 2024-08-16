@@ -39,16 +39,18 @@ class CarritoCompras():
             print(f"Cantiad: {producto.cantidad}")
             print(f"Descuento: {producto.descuento}%")
             if producto.tipo_producto == "Ropa":
-                print(f"Talle: {producto.codigo}")
-                print(f"Genero: {producto.codigo}")
+                print(f"Talle: {producto.talle}")
+                print(f"Genero: {producto.genero}")
             elif producto.tipo_producto == "Accesorio":
                 print(f"Material: {producto.material}")
     
-    def remover(self, codigo : str):
+    def remover(self, codigo : str) -> bool:
         for producto in self.carrito:
-            if producto.get_info().get("Codigo") == codigo:
+            if producto.codigo == codigo:
                 self.carrito.remove(producto)
-    
+                return True
+        return False
+        
     def cantidad(self):
         return len(self.carrito)
 

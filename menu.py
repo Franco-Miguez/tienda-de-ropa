@@ -1,4 +1,5 @@
 from importador import Importador
+from carrito_compras import CarritoCompras
 from productos.ropa import Ropa
 from productos.accesorio import Accesorio
 
@@ -12,7 +13,7 @@ class Menu():
             print("\n\n\tMenu:")
             opcion = input("1. Vender\n2. Mostrar Stock\n3. Agregar stock\n4. Salir\nOpcion: ")
             if opcion == "1":
-                pass
+                self.vender()
             elif opcion == "2":
                 self.mostrar_stock()
             elif opcion == "3":
@@ -21,6 +22,74 @@ class Menu():
                 quit()
             else:
                 print("#"*10,"\n\tError la opcion que selecciono no esta disponible\n","#"*10, sep="")
+
+    def vender(self):
+        self.menu_venta()
+    
+    def menu_venta(self):
+        carrito = CarritoCompras()
+        while True:
+            print("\n\tMenu Carrito:")
+            opcion = input("1. Agregar Producto\n2. Quitar Producto\n3. Finalizar Venta\n4. Ver Carrito\n5. Volver al Menu\nOpcion: ")
+
+            if opcion == "1":
+                codigo = input("Codigo: ")
+                cantidad = int(input("Cantiad: "))
+                for articulo in self.stock:
+                    if articulo.get_info()["Codigo"] == codigo:
+                        stock = int(articulo.get_info()["Stock"])
+                        while stock < cantidad:
+                            cantidad = int(input(f"el stock es de {stock} ingrese otro valor: "))
+                        if cantidad > 0:
+                            producto = articulo
+                        break
+                try:
+                    carrito.agregar(producto,cantidad)
+                except UnboundLocalError:
+                    if cantidad > 0:
+                        print("\n","#"*10,sep="")
+                        print("\tArticulo no encontrado")
+                        print("#"*10)
+                
+            elif opcion == "2":
+                codigo = input("Codigo: ")
+                if not carrito.remover(codigo):
+                    print("\tArticulo no enconrtado ")
+
+            elif opcion == "3":
+                for articulo in self.stock:
+                    for articulo_carrito in carrito.carrito:
+                        if articulo.get_info()["Codigo"] == articulo_carrito.codigo:
+                            index = self.stock.index(articulo)
+                            self.stock[index].get_info()["Stock"] = str(int(self.stock[index].get_info()["Stock"]) - articulo_carrito.cantidad )
+                open("./csv/accesorios.csv","w").close
+                open("./csv/ropa.csv","w").close
+                for articulo in self.stock:
+                    nombre = articulo.get_info()["Descripcion"]
+                    stock = articulo.get_info()["Stock"]
+                    precio = articulo.get_info()["Precio"]
+                    try:
+                        genero = articulo.get_info()["Genero"]
+                        talle = articulo.get_info()["Talle"]
+                    except KeyError:
+                        genero = False
+                        talle = False
+                    try:
+                        material = articulo.get_info()["Material"]
+                    except KeyError:
+                        material = False
+                    Importador.exportar(nombre,stock,precio,genero,talle,material)
+                break
+            elif opcion == "4":
+                carrito.mostrar()
+            elif opcion == "5":
+                break
+            else:
+                print("#"*10)
+                print("\tError elija una opcion no valida")
+                print("#"*10)
+
+        self.mostrar_menu()
     
     def mostrar_stock(self):
         for articulo in self.stock:
@@ -59,7 +128,7 @@ class Menu():
         else:
             material = input("Material: ")
             Importador.exportar(nombre, stock, precio, material=material)
-        
+
 
 
 if __name__== "__main__":

@@ -5,7 +5,7 @@ from productos.accesorio import Accesorio
 class Importador():
     @classmethod
     def importar(cls, ruta : str) -> list[object]:
-        with open(ruta, newline="") as archivo:
+        with open(ruta, newline="", encoding="utf-8") as archivo:
             info = csv.DictReader(archivo)
             lista = []
             for linea in info:
@@ -39,7 +39,7 @@ class Importador():
         else:
             ruta = "./csv/accesorios.csv"
             articulo["Material"] = material
-        with open(ruta, mode="a") as archivo:
+        with open(ruta, mode="a", newline="") as archivo:
             titulos = ["Codigo","Precio","Stock","Descripcion"]
             if talle:
                 titulos.insert(1,"Genero") 
@@ -53,16 +53,18 @@ class Importador():
     
     @classmethod
     def generar_codigo(cls):
-        with open("./csv/accesorios.csv") as archivo:
-            info = csv.DictReader(archivo)
-            for linea in info:
-                codigo_accesorios = linea.get("Codigo")
-        with open("./csv/ropa.csv") as archivo:
-            info = csv.DictReader(archivo)
-            for linea in info:
-                codigo_ropa = linea.get("Codigo")
-        if codigo_ropa > codigo_accesorios:
-            return str(int(codigo_ropa) + 1)
+        lista_ropa = cls.importar("./csv/ropa.csv")
+        lista_accesorio = cls.importar("./csv/accesorios.csv")
+        if len(lista_ropa) != 0:
+            codigo_de_ropa = lista_ropa[-1].get_info().get("Codigo")
+        else:
+            codigo_de_ropa = "000"
+        if len(lista_accesorio) != 0:
+            codigo_accesorios = lista_accesorio[-1].get_info().get("Codigo")
+        else:
+            codigo_accesorios = "000"
+        if codigo_de_ropa > codigo_accesorios:
+            return str(int(codigo_de_ropa) + 1)
         else:
             return str(int(codigo_accesorios) + 1)
 
