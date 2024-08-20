@@ -6,12 +6,13 @@ class CarritoCompras():
     def __init__(self) -> None:
         self.carrito = []
     
-    def agregar(self, producto : object, cantidad : int):
+    def agregar(self, producto : object, cantidad : int, descuento : int | None = 0):
         info = producto.get_info() 
         codigo = info.get("Codigo")
         descripcion = info.get("Descripcion")
         precio = info.get("Precio")
         nuevo_producto = ProductoCarrito(codigo, descripcion, precio, cantidad, True)
+        nuevo_producto.descuento = descuento
         
         if type(producto) == type(Ropa("","","")):
             talle = info.get("Talle")
@@ -53,6 +54,12 @@ class CarritoCompras():
         
     def cantidad(self):
         return len(self.carrito)
+    
+    def mostrar_total(self) -> float:
+        total = 0
+        for articulo in self.carrito:
+            total += articulo.mostrar_total()
+        return total
 
 
 if __name__ == "__main__":

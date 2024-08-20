@@ -17,6 +17,12 @@ class Producto():
     def set_stock(self, nuevo_stock):
         self.__stock = nuevo_stock
     
+    def set_precio(self, nuevo_precio):
+        self.__precio = nuevo_precio
+
+    def set_descripcion(self, nueva_descripcion):
+        self.__descripcion = nueva_descripcion
+
     def get_codigo(self):
         return self.__codigo
     

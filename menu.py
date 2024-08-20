@@ -11,7 +11,7 @@ class Menu():
     def mostrar_menu(self):
         while True:
             print("\n\n\tMenu:")
-            opcion = input("1. Vender\n2. Mostrar Stock\n3. Agregar stock\n4. Salir\nOpcion: ")
+            opcion = input("1. Vender\n2. Mostrar Stock\n3. Agregar stock\n4. Modificar Producto\n5. Salir\nOpcion: ")
             if opcion == "1":
                 self.vender()
             elif opcion == "2":
@@ -19,22 +19,27 @@ class Menu():
             elif opcion == "3":
                 self.agregar_stock()
             elif opcion == "4":
+                print("Se a modificado") if self.modificar_producto() else print("No se a encontrado ese producto")
+            elif opcion == "5":
                 quit()
             else:
                 print("#"*10,"\n\tError la opcion que selecciono no esta disponible\n","#"*10, sep="")
 
+    ######### Ventas
     def vender(self):
         self.menu_venta()
     
     def menu_venta(self):
         carrito = CarritoCompras()
         while True:
+            print(f"\n\n\tTotal: {carrito.mostrar_total()}\n")
             print("\n\tMenu Carrito:")
             opcion = input("1. Agregar Producto\n2. Quitar Producto\n3. Finalizar Venta\n4. Ver Carrito\n5. Volver al Menu\nOpcion: ")
 
             if opcion == "1":
                 codigo = input("Codigo: ")
                 cantidad = int(input("Cantiad: "))
+                descuento = int(input("Descuento: "))
                 for articulo in self.stock:
                     if articulo.get_info()["Codigo"] == codigo:
                         stock = int(articulo.get_info()["Stock"])
@@ -44,7 +49,7 @@ class Menu():
                             producto = articulo
                         break
                 try:
-                    carrito.agregar(producto,cantidad)
+                    carrito.agregar(producto,cantidad, descuento)
                 except UnboundLocalError:
                     if cantidad > 0:
                         print("\n","#"*10,sep="")
@@ -61,10 +66,13 @@ class Menu():
                     for articulo_carrito in carrito.carrito:
                         if articulo.get_info()["Codigo"] == articulo_carrito.codigo:
                             index = self.stock.index(articulo)
-                            self.stock[index].get_info()["Stock"] = str(int(self.stock[index].get_info()["Stock"]) - articulo_carrito.cantidad )
-                open("./csv/accesorios.csv","w").close
-                open("./csv/ropa.csv","w").close
+                            self.stock[index].set_stock(str(int(self.stock[index].get_info()["Stock"]) - articulo_carrito.cantidad ))
+                with open("./csv/accesorios.csv","w") as file:
+                    file.write("Codigo,Material,Precio,Stock,Descripcion\n")
+                with open("./csv/ropa.csv","w") as file:
+                    file.write("Codigo,Talle,Genero,Precio,Stock,Descripcion\n")
                 for articulo in self.stock:
+                    codigo = articulo.get_info()["Codigo"]
                     nombre = articulo.get_info()["Descripcion"]
                     stock = articulo.get_info()["Stock"]
                     precio = articulo.get_info()["Precio"]
@@ -78,7 +86,7 @@ class Menu():
                         material = articulo.get_info()["Material"]
                     except KeyError:
                         material = False
-                    Importador.exportar(nombre,stock,precio,genero,talle,material)
+                    Importador.exportar(nombre,stock,precio,genero,talle,material, codigo=codigo)
                 break
             elif opcion == "4":
                 carrito.mostrar()
@@ -88,9 +96,25 @@ class Menu():
                 print("#"*10)
                 print("\tError elija una opcion no valida")
                 print("#"*10)
-
         self.mostrar_menu()
     
+    def modificar_producto(self):
+        codigo = input("codigo: ")
+        precio = input("Precio: ")
+        stock = input("Stock: ")
+        descripcion = input("Nombre: ")
+        for articulo in self.stock:
+            if articulo.get_info()["Codigo"] == codigo:
+                index = self.stock.index(articulo)
+                if precio != "":
+                    self.stock[index].set_precio(precio)
+                if stock != "":
+                    self.stock[index].set_stock(stock)
+                if descripcion != "":
+                    self.stock[index].set_descripcion(descripcion)
+                return True
+        return False
+
     def mostrar_stock(self):
         for articulo in self.stock:
             info = articulo.get_info()
@@ -98,7 +122,6 @@ class Menu():
             print(f"Codigo: {info.get('Codigo')}")
             print(f"Stock: {info.get('Stock')}")
             print(f"Precio: {info.get('Precio')}")
-            print(type(articulo) == type(Ropa("001","Xl", "Masculino")))
             if type(articulo) == type(Ropa("001","Xl", "Masculino")):
                 print(f"Genero: {info.get("Genero")}")
                 print(f"Talle: {info.get("Talle")}")

@@ -25,10 +25,10 @@ class Importador():
     @classmethod
     def exportar(
                     cls, nombre : str, stock : int, precio : float,
-                    genero : str | None = False, talle : str | None = False, material : str | None = False
+                    genero : str | None = False, talle : str | None = False, material : str | None = False, codigo = ""
                 ):
         articulo = {}
-        articulo["Codigo"] = cls.generar_codigo()
+        articulo["Codigo"] = cls.generar_codigo() if codigo == "" else codigo
         articulo["Descripcion"] = nombre
         articulo["Stock"] = stock
         articulo["Precio"] = precio
@@ -39,7 +39,7 @@ class Importador():
         else:
             ruta = "./csv/accesorios.csv"
             articulo["Material"] = material
-        with open(ruta, mode="a", newline="") as archivo:
+        with open(ruta, mode="a", newline="", encoding="utf-8") as archivo:
             titulos = ["Codigo","Precio","Stock","Descripcion"]
             if talle:
                 titulos.insert(1,"Genero") 

@@ -28,6 +28,6 @@ class ProductoCarrito():
         self.cambiar_precio = nuevo_precio
     
     def mostrar_total(self) -> float:
-        resultado = self.precio*self.cantidad
-        descuento = resultado * self.descuento / 100
+        resultado = float(self.precio)*int(self.cantidad)
+        descuento = resultado * float(self.descuento) / 100
         return resultado - descuento
