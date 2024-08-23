@@ -1,12 +1,13 @@
 from importador import Importador
 from carrito_compras import CarritoCompras
 from productos.ropa import Ropa
-from productos.accesorio import Accesorio
+from admin import Admin
 
 class Menu():
     def __init__(self) -> None:
         self.stock = Importador.importar("./csv/accesorios.csv")
         self.stock.extend(Importador.importar("./csv/ropa.csv"))
+        self.admin = Admin("Admin","1234")
     
     def mostrar_menu(self):
         while True:
@@ -16,10 +17,16 @@ class Menu():
                 self.vender()
             elif opcion == "2":
                 self.mostrar_stock()
-            elif opcion == "3":
-                self.agregar_stock()
-            elif opcion == "4":
-                print("Se a modificado") if self.modificar_producto() else print("No se a encontrado ese producto")
+            elif opcion == "3" or opcion == "4":
+                usuario = input("Usuario: ")
+                password = input("Contraseña: ")
+                if self.admin.incio_secion(usuario,password):
+                    if opcion == "3":
+                        self.agregar_stock()
+                    elif opcion == "4":
+                        print("Se a modificado") if self.modificar_producto() else print("No se a encontrado ese producto")
+                else:
+                    print("El usuario o la contraseña esta mal")
             elif opcion == "5":
                 quit()
             else:
