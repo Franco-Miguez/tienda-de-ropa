@@ -77,7 +77,7 @@ class App(tk.Tk):
         self.frame_barra_abajo.pack_propagate(False)
         self.frame_barra_abajo.pack(side="bottom", fill="x")
     
-    def verificador_Agregar(self, info, cantidad, descuento, precio, ventana):
+    def verificador_Agregar(self, info, cantidad, descuento, precio, ventana) -> int:
         if not cantidad.get().isdecimal() or int(cantidad.get()) <= 0:
             messagebox.showwarning("Cantidad no valida", "La cantidad tiene que ser mayor que 0")
             return 0
@@ -94,30 +94,56 @@ class App(tk.Tk):
         except:
             messagebox.showwarning("precio no valida", "el precio tiene que ser un numero ejemplo: 12.5")
             return 0
+
+        # Verifica si no supera el stock
+        stock_carrito = 0
+        for id in self.treeview_barra_abajo.get_children(""):
+            if self.treeview_barra_abajo.item(id)["text"] == info["text"]:
+                stock_carrito += int(self.treeview_barra_abajo.item(id)["values"][0])
+            
+        if stock_carrito >= info["values"][0]:
+            messagebox.showwarning("cantidad no valida", "No tienes tanto stock")
+            return 0
+
+        subtotal = lambda c : float(precio.get()) * int(c) * ( ( 100 - int(descuento) ) / 100)
+
+        # Verifica si existe y se esta se lo agrega
         for id in self.treeview_barra_abajo.get_children(""):
             if self.treeview_barra_abajo.item(id)["text"] == info["text"] and int(self.treeview_barra_abajo.item(id)["values"][2]) == descuento:
+                cantidad_total = int(cantidad.get()) + int(self.treeview_barra_abajo.item(id)["values"][0])
+                anterior_valor = float(self.treeview_barra_abajo.item(id)["values"][4])
                 self.treeview_barra_abajo.item(id, values=(
-                    int(cantidad.get()) + int(self.treeview_barra_abajo.item(id)["values"][0]),
+                    cantidad_total,
                     info["values"][1],
                     descuento,
-                    precio.get()
+                    precio.get(),
+                    subtotal(cantidad_total),
                     ))
+                self.var_texto_total.set( subtotal(cantidad_total) + self.var_texto_total.get() - anterior_valor )
                 ventana.destroy()
                 return 1
 
-                
+        # Inserta uno nuevo
         self.treeview_barra_abajo.insert(
             "", 
             tk.END,
             text=info["text"],
-            values=(cantidad.get(), info["values"][1], descuento, precio.get()))
+            image=info["image"],
+            values=(cantidad.get(),
+                    info["values"][1],
+                    descuento,
+                    precio.get(),
+                    subtotal(cantidad.get())
+                    )
+        )
+        self.var_texto_total.set( subtotal(cantidad.get()) + self.var_texto_total.get() )
         ventana.destroy()
-        
+        return 1
     
     def ventana_agregar_carrito(self,info):
         var_descuento = tk.IntVar()
         ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
-        ventana.geometry(f"300x400+{self.ANCHO_ROOT//2-150}+{self.ALTO_ROOT//2-200}")
+        ventana.geometry(f"300x500+{self.ANCHO_ROOT//2-150}+{self.ALTO_ROOT//2-200}")
         ventana.title("Agregar al Carrito")
         tk.Label(ventana, text=info["values"][1], bg=COLOR_BARRA_IZQ, fg="white").pack(pady=10)
         tk.Label(ventana, text=f"Codigo: {info["text"]}", bg=COLOR_BARRA_IZQ, fg="white").pack(pady=10)
@@ -152,6 +178,39 @@ class App(tk.Tk):
             ).pack(side="right", padx=40, ipadx=5, ipady=5)
         tk.Button(ventana, text="Salir", bg=COLOR_BUTTON, fg="white", command=ventana.destroy).pack(side="left", padx=40, ipadx=5, ipady=5)
 
+    def quitar_carrito(self):
+        item_seleccionado = self.treeview_barra_abajo.focus()
+        self.var_texto_total.set(
+            self.var_texto_total.get() - float(self.treeview_barra_abajo.item(item_seleccionado)["values"][4])
+            )
+        self.treeview_barra_abajo.delete((item_seleccionado))
+    
+    def realizar_venta(self, treeview):
+        id = self.treeview_barra_abajo.get_children("")
+        codigo = [self.treeview_barra_abajo.item(x)["text"] for x in id]
+        for ropa in self.ropa:
+            if ropa.get_codigo() in codigo:
+                ropa.set_stock(
+                    int(ropa.get_stock()) - int(self.treeview_barra_abajo.item(
+                        id[codigo.index(ropa.get_codigo()) ]
+                        )["values"][0])
+                    )
+        for x in id: self.treeview_barra_abajo.delete(x)
+        for x in treeview.get_children(""): treeview.delete(x)
+        for item in self.ropa[:5]:
+            treeview.insert("",
+                tk.END,
+                text=item.get_codigo(),
+                image=self.img_ropa, 
+                values=[
+                    item.get_stock(),
+                    item.get_descripcion(),
+                    item.get_precio(),
+                    "",
+                    item.get_genero(),
+                    item.get_talle()
+                ]
+                )
     
     def area_venta(self):
         frame_arriba = tk.Frame(self.frame_area_trabajo, bg="#fff")
@@ -159,6 +218,7 @@ class App(tk.Tk):
         frame_der = tk.Frame(self.frame_area_trabajo, bg="#fff")
 
         buscador = tk.Entry(frame_arriba, width=50)
+        buscador.insert(0,"Buscar...")
         btn_agregar = tk.Button(
             frame_der,
             text="Agregar Articulo",
@@ -171,10 +231,18 @@ class App(tk.Tk):
             text="Quitar Articulo",
             bg=COLOR_BUTTON,
             fg="white",
-            command=lambda: self.treeview_barra_abajo.delete((self.treeview_barra_abajo.focus()))
+            command=self.quitar_carrito
             )
         
         treeview = ttk.Treeview(frame_izq, columns=["stock", "nombre", "precio", "material", "genero", "talle"])
+        
+        btn_vender = tk.Button(
+            frame_der,
+            text="Vender",
+            bg=COLOR_BUTTON,
+            fg="white",
+            command=lambda: self.realizar_venta(treeview)
+            )
         
         treeview.heading("#0", text="Codigo")
         treeview.heading("stock", text="Stock")
@@ -222,6 +290,7 @@ class App(tk.Tk):
         treeview.pack(padx=15, expand=True, fill="both")
         btn_agregar.pack(padx=15, pady=15)
         btn_quitar.pack()
+        btn_vender.pack(side="bottom", pady=15)
         buscador.pack(pady=15, ipadx=5)
         
         frame_arriba.pack( fill="x")
@@ -233,19 +302,22 @@ class App(tk.Tk):
         frame_izq = tk.Frame(self.frame_barra_abajo, bg=COLOR_BARRA_ABAJO)
         frame_der = tk.Frame(self.frame_barra_abajo)
 
-        self.treeview_barra_abajo = ttk.Treeview(frame_izq, columns=["cantidad","nombre", "descuento", "precio"])
+        self.treeview_barra_abajo = ttk.Treeview(frame_izq, columns=["cantidad","nombre", "descuento", "precio","subtotal"])
         self.treeview_barra_abajo.heading("#0", text="Codigo")
         self.treeview_barra_abajo.heading("nombre", text="Nombre")
         self.treeview_barra_abajo.heading("cantidad", text="Cantidad")
         self.treeview_barra_abajo.heading("descuento", text=" % ")
         self.treeview_barra_abajo.heading("precio", text="Precio")
+        self.treeview_barra_abajo.heading("subtotal", text="Subtotal")
         self.treeview_barra_abajo.column("#0", width=30, anchor="center")
         self.treeview_barra_abajo.column("cantidad", width=30, anchor="center")
         self.treeview_barra_abajo.column("precio", width=30, anchor="center")
         self.treeview_barra_abajo.column("descuento", width=30, anchor="center")
+        self.treeview_barra_abajo.column("subtotal", width=30, anchor="center")
         self.treeview_barra_abajo.pack(expand=True, fill="both")
 
-        texto_total = tk.Label(frame_der, text="0.0", bg=COLOR_BARRA_ABAJO, font=(LETRA,TAMANIO,ESTILO))
+        self.var_texto_total = tk.DoubleVar()
+        texto_total = tk.Label(frame_der, textvariable=self.var_texto_total, bg=COLOR_BARRA_ABAJO, font=(LETRA,TAMANIO,ESTILO))
         texto_total.pack()
         
         frame_izq.pack(side="left",fill="both",expand=True)
