@@ -33,11 +33,11 @@ class Importador():
         articulo["Stock"] = stock
         articulo["Precio"] = precio
         if talle: 
-            ruta = "./csv/ropa.csv"
+            ruta = "./assets/csv/ropa.csv"
             articulo["Genero"] = genero
             articulo["Talle"] = talle
         else:
-            ruta = "./csv/accesorios.csv"
+            ruta = "./assets/csv/accesorios.csv"
             articulo["Material"] = material
         with open(ruta, mode="a", newline="", encoding="utf-8") as archivo:
             titulos = ["Codigo","Precio","Stock","Descripcion"]
@@ -53,8 +53,8 @@ class Importador():
     
     @classmethod
     def generar_codigo(cls):
-        lista_ropa = cls.importar("./csv/ropa.csv")
-        lista_accesorio = cls.importar("./csv/accesorios.csv")
+        lista_ropa = cls.importar("./assets/csv/ropa.csv")
+        lista_accesorio = cls.importar("./assets/csv/accesorios.csv")
         if len(lista_ropa) != 0:
             codigo_de_ropa = lista_ropa[-1].get_info().get("Codigo")
         else:
