@@ -21,6 +21,13 @@ class Importador():
                     material = linea.get("Material")
                     lista.append( Accesorio(codigo, material, precio, stock, descripcion) )
             return lista
+    
+    @classmethod
+    def importar_usuarios(cls) -> list[object]:
+        with open("./assets/csv/usuarios.csv",newline="",encoding="utf-8") as archivo:
+            info = csv.DictReader(archivo)
+            lista = [[linea.get("Usuario"), linea.get("Permiso")]  for linea in info]
+            return lista
             
     @classmethod
     def exportar(
@@ -67,6 +74,8 @@ class Importador():
             return str(int(codigo_de_ropa) + 1)
         else:
             return str(int(codigo_accesorios) + 1)
+    
+    
 
 if __name__ == "__main__":
     productos = Importador.importar("ropa.csv")

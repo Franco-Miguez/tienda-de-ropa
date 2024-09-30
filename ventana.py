@@ -11,7 +11,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.ANCHO_ROOT   = self.winfo_screenwidth()  - 100
+        self.ANCHO_ROOT   = self.winfo_screenwidth()  - 101
         self.ALTO_ROOT    = self.winfo_screenheight() - 150
 
         self.title("Mi Tiendita de Ropa y Accesorios")
@@ -20,6 +20,10 @@ class App(tk.Tk):
         self.configure(bg=COLOR_BACKGROUND) 
         style = ttk.Style()
         style.configure("Treeview", rowheight=42)
+        
+        self.admin = "Admin"
+        self.contrasena = "Admin"
+        self.login = False
 
         self.img = None
         self.list_img = []
@@ -89,6 +93,7 @@ class App(tk.Tk):
         btn_lista_izquierda[2].config(command=self.btn_realizar_venta)
         btn_lista_izquierda[3].config(command=self.btn_agregar_articulo)
         btn_lista_izquierda[4].config(command=self.btn_modificar_articulo)
+        btn_lista_izquierda[-2].config(command=self.btn_cambiar_permisos)
         btn_lista_izquierda[-1].config(command=self.quit)
     
     def limpiar_area_trabajo(self):
@@ -97,7 +102,60 @@ class App(tk.Tk):
             self.frame_barra_abajo.destroy()
         except:
             pass
+    
+    def verificar_usuario(self, usuario, contrasena, ventana):
+        if usuario == self.admin and contrasena == self.contrasena:
+            self.login = True
+            ventana.destroy()
+        else:
+            messagebox.showinfo("daton incorrectos", "El usuario o la contraseña no se encuentran")
+    
+    def ventana_verificar_usuario(self):
+        ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
+        ventana.geometry("300x200")
+        ventana.title("Login")
+        tk.Label(ventana, text="Usuario", bg=COLOR_BARRA_IZQ, fg="white", font=(LETRA,TAMANIO,ESTILO)).pack(pady=5)
+        usuario = tk.Entry(ventana)
+        usuario.pack()
+        tk.Label(ventana, text="Contraseña", bg=COLOR_BARRA_IZQ, fg="white", font=(LETRA,TAMANIO,ESTILO)).pack(pady=5)
+        contrasena = tk.Entry(ventana, show="*")
+        contrasena.pack()
+        btn_ingresar = tk.Button(ventana, text="Ingresar", command= lambda: self.verificar_usuario(usuario.get(), contrasena.get(), ventana))
+        btn_ingresar.pack(side="right", padx=10)
+        btn_cancelar = tk.Button(ventana, text="cancelar", command = lambda : ventana.destroy())
+        btn_cancelar.pack(side="left", padx=10)
         
+        
+    def eliminar_usuario(self,treeview : ttk.Treeview):
+        id = treeview.focus()
+        usuario = treeview.item(id)
+        if messagebox.askokcancel("Eliminar", f"Decea eliminar al usuario {usuario['text']}", icon="warning"):
+            treeview.delete(id)
+        
+    def btn_cambiar_permisos(self):
+        ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
+        ventana.geometry("500x300")
+        ventana.title("Administrador de Usuarios")
+        btns = ["Agregar", "Actualizar", "Eliminar"]
+        treeview = ttk.Treeview(ventana, columns="admin")
+        treeview.heading("#0", text="Usuario")
+        treeview.heading("admin", text="Administrador")
+
+        for usuario, permiso in Importador.importar_usuarios():
+            treeview.insert("", tk.END, text=usuario, values=[permiso])
+        
+        treeview.pack(side="left", expand=True, fill="both", padx=5, pady=5)
+        frame = tk.Frame(ventana, bg=COLOR_BARRA_IZQ)
+        
+        btns = [tk.Button(frame,text=x, bg=COLOR_BUTTON, fg="white") for x in btns]
+        for btn in btns: btn.pack(pady=10)
+        
+        btns[-1].config(command=lambda: self.eliminar_usuario(treeview))
+        
+        frame.pack(side="right", fill="y", ipadx=5)
+        
+        
+    
     def btn_realizar_venta(self):
         self.limpiar_area_trabajo()
         self.area_venta()
@@ -183,7 +241,7 @@ class App(tk.Tk):
         else:
             Importador.exportar(nombre, stock, precio, "", "", material, codigo)
             self.accesorios.append( Accesorio(codigo, material, precio, stock, nombre))
-        
+        self.login = False
         ventana.destroy()
     
     def seleccionar_imagen(self, button):
