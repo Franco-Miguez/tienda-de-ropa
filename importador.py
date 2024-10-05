@@ -45,7 +45,44 @@ class Importador():
                 escribir.writerow(nueva_lista)
     
     @classmethod
-    def Eliminar_usuario(cls, nombre):
+    def agregar_usuario(cls, nombre, permiso, contrasena) -> bool:
+        """Agrega un nuevo usuario si el nombre no esta en uso
+
+        Args:
+            nombre (str): nombre de usuario
+            permiso (bool): permiso
+            contrasena (str): contraseña del usuario
+
+        Returns:
+            bool: false si ya existe True si se agrega sin problema
+        """
+        usuarios = cls.importar_usuarios()
+        for usuario, p, c in usuarios:
+            if usuario == nombre:
+                return False
+        usuarios.append([nombre,permiso,contrasena])
+        cls.__actualizar_csv_usuarios(usuarios)
+        return True
+    
+    @classmethod
+    def actualizar_usuario(cls, usuario, nombre_nuevo, permiso_nuevo, contrasena_nueva):
+        """actualiza el usuario pasando el nombre de usuario
+
+        Args:
+            usuario (str): nombre de usuario a actualizar
+            nombre_nuevo (_type_): nuevo nombre a cambiar
+            permiso_nuevo (_type_): nuevo permiso
+            contrasena_nueva (_type_): nueva contraseña
+        """
+        usuarios = cls.importar_usuarios()
+        for x in range(len(usuarios)):
+            if usuarios[x][0] == usuario:
+                usuarios[x] = [nombre_nuevo, permiso_nuevo, contrasena_nueva]
+    
+        cls.__actualizar_csv_usuarios(usuarios)
+    
+    @classmethod
+    def eliminar_usuario(cls, nombre):
         usuarios = cls.importar_usuarios()
         for usuario, permiso, contrasena in usuarios:
             if usuario == nombre:

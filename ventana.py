@@ -105,12 +105,18 @@ class App(tk.Tk):
             pass
     
     def verificar_usuario(self, usuario, contrasena, ventana, funcion):
-        if usuario == self.admin and contrasena == self.contrasena:
-            self.login = True
-            funcion()
-            ventana.destroy()
-        else:
-            messagebox.showinfo("daton incorrectos", "El usuario o la contraseña no se encuentran")
+        usuarios = Importador.importar_usuarios()
+        for u , p , c in usuarios:
+            if usuario == u and contrasena == c:
+                if p == "True":
+                    self.login = True
+                    funcion()
+                    ventana.destroy()
+                    return None
+                else:
+                    messagebox.showinfo("permisos no validos", "El usuario no es administrador")
+                    return None
+        messagebox.showinfo("daton incorrectos", "El usuario o la contraseña no se encuentran")
     
     def ventana_verificar_usuario(self, funcion):
         ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)

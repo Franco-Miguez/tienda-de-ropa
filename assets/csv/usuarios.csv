@@ -1,2 +1,5 @@
 Usuario,Permiso,Contrasena
-Pepe,True,1234
+Pepe,False,1234
+Ana,True,9874
+Jose,False,1234
+Pedro,True,4561
