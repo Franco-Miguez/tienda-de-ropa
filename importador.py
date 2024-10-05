@@ -23,11 +23,34 @@ class Importador():
             return lista
     
     @classmethod
-    def importar_usuarios(cls) -> list[object]:
+    def importar_usuarios(cls) -> list[list]:
         with open("./assets/csv/usuarios.csv",newline="",encoding="utf-8") as archivo:
             info = csv.DictReader(archivo)
-            lista = [[linea.get("Usuario"), linea.get("Permiso")]  for linea in info]
+            lista = [[linea.get("Usuario"), linea.get("Permiso"), linea.get("Contrasena")]  for linea in info]
             return lista
+    
+    @classmethod
+    def __actualizar_csv_usuarios(cls, lista):
+        ruta = "./assets/csv/usuarios.csv"
+        with open(ruta, mode="w", newline="", encoding="utf-8") as archivo:
+            titulos = ["Usuario", "Permiso", "Contrasena"]
+            escribir = csv.DictWriter(archivo, titulos)
+            escribir.writeheader()
+            
+            for linea in lista:
+                nueva_lista = {}
+                nueva_lista["Usuario"] = linea[0]
+                nueva_lista["Permiso"] = linea[1]
+                nueva_lista["Contrasena"] = linea[2]
+                escribir.writerow(nueva_lista)
+    
+    @classmethod
+    def Eliminar_usuario(cls, nombre):
+        usuarios = cls.importar_usuarios()
+        for usuario, permiso, contrasena in usuarios:
+            if usuario == nombre:
+                usuarios.remove([usuario,permiso,contrasena])
+        cls.__actualizar_csv_usuarios(usuarios)
             
     @classmethod
     def exportar(

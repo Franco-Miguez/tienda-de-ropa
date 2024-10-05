@@ -6,6 +6,7 @@ from importador import Importador
 from productos.ropa import Ropa
 from productos.accesorio import Accesorio
 import os
+from ventana_usuarios import VentanaUsuarios
 
 class App(tk.Tk):
     def __init__(self):
@@ -91,9 +92,9 @@ class App(tk.Tk):
         btn_lista_izquierda[0].config(command=self.btn_ver_prendas)
         btn_lista_izquierda[1].config(command=self.btn_ver_accesorios)
         btn_lista_izquierda[2].config(command=self.btn_realizar_venta)
-        btn_lista_izquierda[3].config(command=self.btn_agregar_articulo)
-        btn_lista_izquierda[4].config(command=self.btn_modificar_articulo)
-        btn_lista_izquierda[-2].config(command=self.btn_cambiar_permisos)
+        btn_lista_izquierda[3].config(command= lambda : self.ventana_verificar_usuario(self.btn_agregar_articulo))
+        btn_lista_izquierda[4].config(command= lambda : self.ventana_verificar_usuario(self.btn_modificar_articulo))
+        btn_lista_izquierda[-2].config(command=lambda : self.ventana_verificar_usuario(self.btn_cambiar_permisos))
         btn_lista_izquierda[-1].config(command=self.quit)
     
     def limpiar_area_trabajo(self):
@@ -103,14 +104,15 @@ class App(tk.Tk):
         except:
             pass
     
-    def verificar_usuario(self, usuario, contrasena, ventana):
+    def verificar_usuario(self, usuario, contrasena, ventana, funcion):
         if usuario == self.admin and contrasena == self.contrasena:
             self.login = True
+            funcion()
             ventana.destroy()
         else:
             messagebox.showinfo("daton incorrectos", "El usuario o la contraseña no se encuentran")
     
-    def ventana_verificar_usuario(self):
+    def ventana_verificar_usuario(self, funcion):
         ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
         ventana.geometry("300x200")
         ventana.title("Login")
@@ -120,40 +122,10 @@ class App(tk.Tk):
         tk.Label(ventana, text="Contraseña", bg=COLOR_BARRA_IZQ, fg="white", font=(LETRA,TAMANIO,ESTILO)).pack(pady=5)
         contrasena = tk.Entry(ventana, show="*")
         contrasena.pack()
-        btn_ingresar = tk.Button(ventana, text="Ingresar", command= lambda: self.verificar_usuario(usuario.get(), contrasena.get(), ventana))
+        btn_ingresar = tk.Button(ventana, text="Ingresar", command= lambda: self.verificar_usuario(usuario.get(), contrasena.get(), ventana, funcion))
         btn_ingresar.pack(side="right", padx=10)
         btn_cancelar = tk.Button(ventana, text="cancelar", command = lambda : ventana.destroy())
         btn_cancelar.pack(side="left", padx=10)
-        
-        
-    def eliminar_usuario(self,treeview : ttk.Treeview):
-        id = treeview.focus()
-        usuario = treeview.item(id)
-        if messagebox.askokcancel("Eliminar", f"Decea eliminar al usuario {usuario['text']}", icon="warning"):
-            treeview.delete(id)
-        
-    def btn_cambiar_permisos(self):
-        ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
-        ventana.geometry("500x300")
-        ventana.title("Administrador de Usuarios")
-        btns = ["Agregar", "Actualizar", "Eliminar"]
-        treeview = ttk.Treeview(ventana, columns="admin")
-        treeview.heading("#0", text="Usuario")
-        treeview.heading("admin", text="Administrador")
-
-        for usuario, permiso in Importador.importar_usuarios():
-            treeview.insert("", tk.END, text=usuario, values=[permiso])
-        
-        treeview.pack(side="left", expand=True, fill="both", padx=5, pady=5)
-        frame = tk.Frame(ventana, bg=COLOR_BARRA_IZQ)
-        
-        btns = [tk.Button(frame,text=x, bg=COLOR_BUTTON, fg="white") for x in btns]
-        for btn in btns: btn.pack(pady=10)
-        
-        btns[-1].config(command=lambda: self.eliminar_usuario(treeview))
-        
-        frame.pack(side="right", fill="y", ipadx=5)
-        
         
     
     def btn_realizar_venta(self):
@@ -380,6 +352,9 @@ class App(tk.Tk):
 
         btn_cancelar.pack(side="left", padx=15)
         btn_agregar.pack(side="right", padx=15)
+    
+    def btn_cambiar_permisos(self):
+        ventana = VentanaUsuarios()
     
     def verificador_Agregar(self, info, cantidad, descuento, precio, ventana) -> int:
         if not cantidad.get().isdecimal() or int(cantidad.get()) <= 0:

@@ -1,3 +1,2 @@
-Usuario,Permiso
-Franco,True
-Jose,False
+Usuario,Permiso,Contrasena
+Pepe,True,1234
