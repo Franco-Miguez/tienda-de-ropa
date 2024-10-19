@@ -7,6 +7,7 @@ from productos.ropa import Ropa
 from productos.accesorio import Accesorio
 import os
 from ventana_usuarios import VentanaUsuarios
+from datetime import datetime
 
 class App(tk.Tk):
     def __init__(self):
@@ -22,9 +23,11 @@ class App(tk.Tk):
         style = ttk.Style()
         style.configure("Treeview", rowheight=42)
         
-        self.admin = "Admin"
-        self.contrasena = "Admin"
-        self.login = False
+        self.usuario = None
+    
+        self.login = dict()
+        self.login["validacion"] = False
+        self.login["permisos"] =  False
 
         self.img = None
         self.list_img = []
@@ -37,12 +40,14 @@ class App(tk.Tk):
 
         self.lista_btn_izquierda = ["Ver Prendas", "Ver Accesorios", "Realizar Ventas", "Agregar Articulos", "Modificar Articulos", "Cambiar Permisos", "Salir"]
         
-        self.barra_izquierda()
-        self.area_trabajo()
         
-        self.imprimir()
+        
+        self.barra_izquierda()
+        self.ventana_verificar_usuario(self.imprimir, False)
+    
     
     def insertar_treeview(self,datos : list[list,list], treeview):
+        for id in treeview.get_children(""): treeview.delete(id)
         self.list_img = []
         for lista in datos:
             for item in lista:
@@ -89,12 +94,14 @@ class App(tk.Tk):
         for x in range(len(btn_lista_izquierda)):
             btn_lista_izquierda[x].place(x=10, y=60*(x+1))
         
+        self.text_usuario = tk.Label(self.frame_barra_izquierda, text=f"Usuario: {self.usuario}", bg=COLOR_BARRA_IZQ, fg="white" ,font=(LETRA,TAMANIO,ESTILO))
+        
         btn_lista_izquierda[0].config(command=self.btn_ver_prendas)
         btn_lista_izquierda[1].config(command=self.btn_ver_accesorios)
         btn_lista_izquierda[2].config(command=self.btn_realizar_venta)
-        btn_lista_izquierda[3].config(command= lambda : self.ventana_verificar_usuario(self.btn_agregar_articulo))
-        btn_lista_izquierda[4].config(command= lambda : self.ventana_verificar_usuario(self.btn_modificar_articulo))
-        btn_lista_izquierda[-2].config(command=lambda : self.ventana_verificar_usuario(self.btn_cambiar_permisos))
+        btn_lista_izquierda[3].config(command= lambda : self.ventana_verificar_usuario(self.btn_agregar_articulo, True))
+        btn_lista_izquierda[4].config(command= lambda : self.ventana_verificar_usuario(self.btn_modificar_articulo, True))
+        btn_lista_izquierda[-2].config(command=lambda : self.ventana_verificar_usuario(self.btn_cambiar_permisos, True))
         btn_lista_izquierda[-1].config(command=self.quit)
     
     def limpiar_area_trabajo(self):
@@ -104,21 +111,35 @@ class App(tk.Tk):
         except:
             pass
     
-    def verificar_usuario(self, usuario, contrasena, ventana, funcion):
+    def verificar_usuario(self, usuario, contrasena, ventana, funcion, administrador):
+        """verifica y ejecuta la funcion dependiendo si tiene que ser administrador o no 
+
+        Args:
+            usuario (str): usuario ingresado
+            contrasena (str): contraseña ingresada
+            ventana (toplevel): ventana a cerrar al finalizar
+            funcion (funtion): funcion a ejecutar
+            administrador (bool): True si se ejecuta si es administrador False si no es nesesario serlo
+        """
         usuarios = Importador.importar_usuarios()
         for u , p , c in usuarios:
             if usuario == u and contrasena == c:
-                if p == "True":
-                    self.login = True
-                    funcion()
-                    ventana.destroy()
-                    return None
-                else:
-                    messagebox.showinfo("permisos no validos", "El usuario no es administrador")
-                    return None
+                self.usuario = u
+                self.text_usuario.config(text=f"Usuario: {u}")
+                self.login["validacion"] =  True 
+                self.login["permisos"] =  True if p == "True" else False
+                if not administrador or self.login["permisos"]: funcion()
+                ventana.destroy()
+                return None
         messagebox.showinfo("daton incorrectos", "El usuario o la contraseña no se encuentran")
     
-    def ventana_verificar_usuario(self, funcion):
+    def ventana_verificar_usuario(self, funcion, administrador):
+        """genera una ventana para verificar el usuario y validarlo
+
+        Args:
+            funcion (funtion): funcion a ejecutar
+            administrador (bool): True se ejecuta la funcion unque no sea administrador False si no lo es no se ejecuta
+        """
         ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
         ventana.geometry("300x200")
         ventana.title("Login")
@@ -128,7 +149,7 @@ class App(tk.Tk):
         tk.Label(ventana, text="Contraseña", bg=COLOR_BARRA_IZQ, fg="white", font=(LETRA,TAMANIO,ESTILO)).pack(pady=5)
         contrasena = tk.Entry(ventana, show="*")
         contrasena.pack()
-        btn_ingresar = tk.Button(ventana, text="Ingresar", command= lambda: self.verificar_usuario(usuario.get(), contrasena.get(), ventana, funcion))
+        btn_ingresar = tk.Button(ventana, text="Ingresar", command= lambda: self.verificar_usuario(usuario.get(), contrasena.get(), ventana, funcion, administrador))
         btn_ingresar.pack(side="right", padx=10)
         btn_cancelar = tk.Button(ventana, text="cancelar", command = lambda : ventana.destroy())
         btn_cancelar.pack(side="left", padx=10)
@@ -219,7 +240,7 @@ class App(tk.Tk):
         else:
             Importador.exportar(nombre, stock, precio, "", "", material, codigo)
             self.accesorios.append( Accesorio(codigo, material, precio, stock, nombre))
-        self.login = False
+        self.login["permisos"] = False 
         ventana.destroy()
     
     def seleccionar_imagen(self, button):
@@ -386,7 +407,13 @@ class App(tk.Tk):
             return 0
 
         subtotal = lambda c : float(precio.get()) * int(c) * ( ( 100 - int(descuento) ) / 100)
-
+        
+        for producto in self.ropa:
+            if producto.get_codigo() == info["text"]:
+                index = self.ropa.index(producto)
+                self.ropa[index].set_stock(int(self.ropa[index].get_stock()) - int(cantidad.get()))
+            
+        
         # Verifica si existe y se esta se lo agrega
         for id in self.treeview_barra_abajo.get_children(""):
             if self.treeview_barra_abajo.item(id)["text"] == info["text"] and int(self.treeview_barra_abajo.item(id)["values"][2]) == descuento:
@@ -400,6 +427,8 @@ class App(tk.Tk):
                     subtotal(cantidad_total),
                     ))
                 self.var_texto_total.set( subtotal(cantidad_total) + self.var_texto_total.get() - anterior_valor )
+                
+                self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
                 ventana.destroy()
                 return 1
 
@@ -417,6 +446,7 @@ class App(tk.Tk):
                     )
         )
         self.var_texto_total.set( subtotal(cantidad.get()) + self.var_texto_total.get() )
+        self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
         ventana.destroy()
         return 1
     
@@ -460,37 +490,33 @@ class App(tk.Tk):
 
     def quitar_carrito(self):
         item_seleccionado = self.treeview_barra_abajo.focus()
+        for articulo in self.ropa:
+            if articulo.get_codigo() == self.treeview_barra_abajo.item(item_seleccionado)["text"]:
+                index = self.ropa.index(articulo)
+                self.ropa[index].set_stock(int(articulo.get_stock()) + self.treeview_barra_abajo.item(item_seleccionado)["values"][0])
         self.var_texto_total.set(
             self.var_texto_total.get() - float(self.treeview_barra_abajo.item(item_seleccionado)["values"][4])
             )
         self.treeview_barra_abajo.delete((item_seleccionado))
+        self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
     
     def realizar_venta(self, treeview):
         id = self.treeview_barra_abajo.get_children("")
-        codigo = [self.treeview_barra_abajo.item(x)["text"] for x in id]
-        for ropa in self.ropa:
-            if ropa.get_codigo() in codigo:
-                ropa.set_stock(
-                    int(ropa.get_stock()) - int(self.treeview_barra_abajo.item(
-                        id[codigo.index(ropa.get_codigo()) ]
-                        )["values"][0])
-                    )
+        fecha = datetime.now()
+        for x in id: Importador.agregar_ventas(
+            self.treeview_barra_abajo.item(x)["text"],
+            self.treeview_barra_abajo.item(x)["values"][0],
+            self.treeview_barra_abajo.item(x)["values"][3],
+            self.treeview_barra_abajo.item(x)["values"][2],
+            self.usuario,fecha
+            
+        )
         for x in id: self.treeview_barra_abajo.delete(x)
         for x in treeview.get_children(""): treeview.delete(x)
-        for item in self.ropa[:5]:
-            treeview.insert("",
-                tk.END,
-                text=item.get_codigo(),
-                image=self.img_ropa, 
-                values=[
-                    item.get_stock(),
-                    item.get_descripcion(),
-                    item.get_precio(),
-                    "",
-                    item.get_genero(),
-                    item.get_talle()
-                ]
-                )
+        self.var_texto_total.set(0.0)
+        self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
+        Importador.actualizar_stock(self.ropa, "ropa")
+        Importador.actualizar_stock(self.accesorios, "accesorios")
     
     def busqueda(self, datos : list[list,list], treeview : ttk.Treeview, palabra : str):
         nueva_lista = []
@@ -656,8 +682,11 @@ class App(tk.Tk):
         label_imagen.pack()
 
     def imprimir(self):
+        self.area_trabajo()
         self.frame_barra_izquierda.pack(side="left")
+        self.frame_barra_izquierda.pack_propagate(False)
         self.frame_area_trabajo.pack(side="top", fill="both", expand=True)
+        self.text_usuario.pack(side="bottom", pady=10)
 
 if __name__ == "__main__":
     app = App()

@@ -119,6 +119,51 @@ class Importador():
             escribir.writerow(articulo)
     
     @classmethod
+    def agregar_ventas(
+                    cls, codigo, cantidad, precio, descuento, usuario, fecha):
+        articulo = {"codigo": codigo}
+        articulo["cantidad"] = cantidad
+        articulo["precio"] = precio
+        articulo["descuento"] = descuento
+        articulo["usuario"] = usuario
+        articulo["fecha"] = fecha
+        ruta = "./assets/csv/ventas.csv"
+
+        with open(ruta, mode="a", newline="", encoding="utf-8") as archivo:
+            titulos = ["codigo", "cantidad", "precio", "descuento", "usuario", "fecha"]
+            escribir = csv.DictWriter(archivo, titulos)
+            escribir.writerow(articulo)
+        
+    @classmethod
+    def actualizar_stock(cls, lista : Ropa | Accesorio, tipo = "ropa"):
+        """Actualiza el csv 
+
+        Args:
+            lista (Ropa | Accesorio): lista con los abojetos de ropa y accesorio
+            tipo (str): "ropa" o "accesorio". Defaults to "ropa". indica tambien el csv a actualizar
+        """
+        ruta = f"./assets/csv/{tipo}.csv"
+        with open(ruta, mode="w", newline="", encoding="utf-8") as archivo:
+            titulos = ["Codigo", "Material", "Precio", "Stock", "Descripcion"]if tipo == "accesorios" else ["Codigo", "Talle", "Genero", "Precio", "Stock", "Descripcion"]
+            escribir = csv.DictWriter(archivo, titulos)
+            escribir.writeheader()
+            
+            for objeto in lista:
+                nueva_lista = dict()
+                nueva_lista["Codigo"] = objeto.get_codigo()
+                if tipo == "ropa":
+                    nueva_lista["Talle"] = objeto.get_talle()
+                    nueva_lista["Genero"] = objeto.get_genero()
+                else:
+                    nueva_lista["Material"] = objeto.get_material()
+                nueva_lista["Precio"] = objeto.get_precio()
+                nueva_lista["Stock"] = objeto.get_stock()
+                nueva_lista["Descripcion"] = objeto.get_descripcion()
+                
+                escribir.writerow(nueva_lista)
+            
+    
+    @classmethod
     def generar_codigo(cls):
         lista_ropa = cls.importar("./assets/csv/ropa.csv")
         lista_accesorio = cls.importar("./assets/csv/accesorios.csv")
