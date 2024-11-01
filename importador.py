@@ -1,4 +1,5 @@
 import csv
+import db
 from productos.ropa import Ropa
 from productos.accesorio import Accesorio
 
@@ -182,8 +183,3 @@ class Importador():
     
     
 
-if __name__ == "__main__":
-    productos = Importador.importar("ropa.csv")
-    productos.extend(Importador.importar("accesorios.csv"))
-    for producto in productos:
-        print(producto.get_info())
