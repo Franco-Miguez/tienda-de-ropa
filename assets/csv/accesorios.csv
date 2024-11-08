@@ -19,4 +19,4 @@ Codigo,Material,Precio,Stock,Descripcion
 118,Metal,65.0,5,Gargantilla de plata
 119,Cuero,35.0,13,Zapatos de cuero
 120,Plástico,16.0,24,Correa de reloj
-122,Plástico,19600,20,Reloj emoji
+122,Plástico,19600.0,20,Reloj emoji

@@ -73,6 +73,24 @@ def agregar_stock_accesorio(codigo, material, precio, stock, descripcion):
     cursor.execute(sql, datos)
     conector.commit()
 
+def agregar_ventas(codigo, descripcion, cantidad, precio, descuento, fecha, id_usuario):
+    datos = (codigo, descripcion, cantidad, precio, descuento, fecha, id_usuario)
+    sql = """
+    INSERT INTO ventas(codigo, descripcion, cantidad, precio, descuento, fecha, id_usuario)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    """
+    cursor.execute(sql, datos)
+    conector.commit()
+
+def agregar_usuario(nombre, contrasena, permiso):
+    datos = (nombre, contrasena, permiso)
+    sql = """
+    INSERT INTO usuarios(id, contrasena, permiso)
+    VALUES (?, ?, ?)
+    """
+    cursor.execute(sql, datos)
+    conector.commit()
+
 def eliminar(codigo, tabla):
     """
         Elimina con referencia de id
@@ -97,7 +115,7 @@ def actualizar_ropa(codigo, talle = "", genero = "", precio = "", stock = "", de
         sql += ", precio = ?"
         datos.append(precio)
     if stock != "":
-        sql += ", stock = ?"
+        sql += f"{"," if sql[-1] == "?" else ""} stock = ?"
         datos.append(stock)
     if descripcion != "":
         sql += ", descripcion = ? "
@@ -168,7 +186,6 @@ def exportar_ventas_csv(ruta):
     sql = f"SELECT * FROM ventas"
     cursor.execute(sql)
     info = cursor.fetchall()
-    print(info)
     
     with open(ruta, mode="w", newline="", encoding="utf-8") as archivo:
         titulos = ["Codigo", "Descripcion","Cantidad", "Precio", "Descuento", "Fecha", "Vendedor"]
@@ -188,4 +205,4 @@ def exportar_ventas_csv(ruta):
             escribir.writerow(nueva_lista)
 
 if __name__ == "__main__":
-    exportar_ventas_csv("nuevo.csv")
+    print(busqueda_id("accesro","001")[4])

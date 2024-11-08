@@ -8,6 +8,7 @@ from productos.accesorio import Accesorio
 import os
 from ventana_usuarios import VentanaUsuarios
 from datetime import datetime
+import db
 
 class App(tk.Tk):
     def __init__(self):
@@ -26,19 +27,20 @@ class App(tk.Tk):
         self.usuario = None
     
         self.login = dict()
-        self.login["validacion"] = False
+        self.login["validacion"] = False 
         self.login["permisos"] =  False
+        self.login["id"] = None
 
         self.img = None
         self.list_img = []
-        self.accesorios = Importador.importar("./assets/csv/accesorios.csv")
-        self.ropa = Importador.importar("./assets/csv/ropa.csv")
+        self.accesorios = [Accesorio(*x)  for x in db.datos("accesorios")] 
+        self.ropa = [Ropa(*x) for x in db.datos("ropa")]
         self.img_accesorio = ImageTk.PhotoImage(image=Image.open("./assets/img/2.png").resize((40,40)))
         self.img_ropa = ImageTk.PhotoImage(image=Image.open("./assets/img/1.png").resize((40,40)))
 
         self.ANCHO_BARRA = int(self.ANCHO_ROOT / 5)
 
-        self.lista_btn_izquierda = ["Ver Prendas", "Ver Accesorios", "Realizar Ventas", "Agregar Articulos", "Modificar Articulos", "Cambiar Permisos", "Salir"]
+        self.lista_btn_izquierda = ["Ver Prendas", "Ver Accesorios", "Realizar Ventas", "Agregar Articulos", "Modificar Articulos", "Cambiar Usuario" ,"Cambiar Permisos", "Salir"]
         
         
         
@@ -46,11 +48,22 @@ class App(tk.Tk):
         self.ventana_verificar_usuario(self.imprimir, False)
     
     
-    def insertar_treeview(self,datos : list[list,list], treeview):
+    def insertar_treeview(self,tablas : list[str,str], treeview, es_tabla = True):
+        """toma por defectios talbas y las tranforma a objetos luego los suma a el treeview, se le puede pasar objetos poniendo en false es tabla
+
+        Args:
+            tablas (list[str,str]): tablas a buscar
+            treeview (_type_): treeview a cargar
+            es_tabla (bool, optional): dependiendo si es una tabla o no . Defaults to True.
+        """
         for id in treeview.get_children(""): treeview.delete(id)
         self.list_img = []
-        for lista in datos:
-            for item in lista:
+        for tabla in tablas:
+            for info in db.datos(tabla) if es_tabla else tabla:
+                if es_tabla:
+                    item = Ropa(*info) if tabla == "ropa" else Accesorio(*info)
+                else:
+                    item = info
                 path_img = f"./assets/img/{item.get_codigo()}.png"
                 try:
                     genero = item.get_genero()
@@ -99,9 +112,10 @@ class App(tk.Tk):
         btn_lista_izquierda[0].config(command=self.btn_ver_prendas)
         btn_lista_izquierda[1].config(command=self.btn_ver_accesorios)
         btn_lista_izquierda[2].config(command=self.btn_realizar_venta)
-        btn_lista_izquierda[3].config(command= lambda : self.ventana_verificar_usuario(self.btn_agregar_articulo, True))
-        btn_lista_izquierda[4].config(command= lambda : self.ventana_verificar_usuario(self.btn_modificar_articulo, True))
-        btn_lista_izquierda[-2].config(command=lambda : self.ventana_verificar_usuario(self.btn_cambiar_permisos, True))
+        btn_lista_izquierda[3].config(command= lambda : self.btn_agregar_articulo() if self.login["permisos"] else messagebox.showinfo("Permisos", "No tienes los persmisos requeridos") )
+        btn_lista_izquierda[4].config(command= lambda : self.btn_modificar_articulo() if self.login["permisos"] else messagebox.showinfo("Permisos", "No tienes los persmisos requeridos"))
+        btn_lista_izquierda[-3].config(command=lambda : self.ventana_verificar_usuario(None, False))
+        btn_lista_izquierda[-2].config(command=lambda :self.btn_cambiar_permisos() if self.login["permisos"] else messagebox.showinfo("Permisos", "No tienes los persmisos requeridos"))
         btn_lista_izquierda[-1].config(command=self.quit)
     
     def limpiar_area_trabajo(self):
@@ -121,14 +135,20 @@ class App(tk.Tk):
             funcion (funtion): funcion a ejecutar
             administrador (bool): True si se ejecuta si es administrador False si no es nesesario serlo
         """
-        usuarios = Importador.importar_usuarios()
+        usuarios = db.datos("usuarios")
         for u , p , c in usuarios:
             if usuario == u and contrasena == c:
                 self.usuario = u
                 self.text_usuario.config(text=f"Usuario: {u}")
                 self.login["validacion"] =  True 
-                self.login["permisos"] =  True if p == "True" else False
-                if not administrador or self.login["permisos"]: funcion()
+                self.login["permisos"] =  bool(p)
+                self.login["id"] = u
+                try:
+                    if not administrador or self.login["permisos"]:
+                        funcion()
+                except:
+                    print("no se ejecuta funcion en login")
+                messagebox.showinfo("Usuario", f"El usuario que esta usando es: \n{u.upper()}")
                 ventana.destroy()
                 return None
         messagebox.showinfo("daton incorrectos", "El usuario o la contraseña no se encuentran")
@@ -143,6 +163,7 @@ class App(tk.Tk):
         ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
         ventana.geometry("300x200")
         ventana.title("Login")
+        ventana.attributes('-topmost', True)
         tk.Label(ventana, text="Usuario", bg=COLOR_BARRA_IZQ, fg="white", font=(LETRA,TAMANIO,ESTILO)).pack(pady=5)
         usuario = tk.Entry(ventana)
         usuario.pack()
@@ -164,11 +185,11 @@ class App(tk.Tk):
     
     def btn_ver_prendas(self):
         self.limpiar_area_trabajo()
-        self.ver_productos(self.ropa)
+        self.ver_productos(self.ropa, "ropa")
     
     def btn_ver_accesorios(self):
         self.limpiar_area_trabajo()
-        self.ver_productos(self.accesorios)
+        self.ver_productos(self.accesorios, "accesorios")
     
     def __cambio_area_info(self, frame_info, var_genero, var_talle, var_material, producto_seleccionado):
         for x in frame_info.winfo_children(): x.destroy()
@@ -428,7 +449,7 @@ class App(tk.Tk):
                     ))
                 self.var_texto_total.set( subtotal(cantidad_total) + self.var_texto_total.get() - anterior_valor )
                 
-                self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
+                self.insertar_treeview(("ropa", "accesorios"), self.treeview)
                 ventana.destroy()
                 return 1
 
@@ -446,7 +467,7 @@ class App(tk.Tk):
                     )
         )
         self.var_texto_total.set( subtotal(cantidad.get()) + self.var_texto_total.get() )
-        self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
+        self.insertar_treeview(("ropa", "accesorios"), self.treeview)
         ventana.destroy()
         return 1
     
@@ -498,44 +519,44 @@ class App(tk.Tk):
             self.var_texto_total.get() - float(self.treeview_barra_abajo.item(item_seleccionado)["values"][4])
             )
         self.treeview_barra_abajo.delete((item_seleccionado))
-        self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
+        self.insertar_treeview(("ropa", "accesorios"), self.treeview)
     
     def realizar_venta(self, treeview):
         id = self.treeview_barra_abajo.get_children("")
         fecha = datetime.now()
-        for x in id: Importador.agregar_ventas(
-            self.treeview_barra_abajo.item(x)["text"],
-            self.treeview_barra_abajo.item(x)["values"][0],
-            self.treeview_barra_abajo.item(x)["values"][3],
-            self.treeview_barra_abajo.item(x)["values"][2],
-            self.usuario,fecha
-            
-        )
+        for x in id:
+            codigo = self.treeview_barra_abajo.item(x)["text"]
+            cantidad = int(self.treeview_barra_abajo.item(x)["values"][0])
+
+            db.agregar_ventas(
+                codigo,
+                self.treeview_barra_abajo.item(x)["values"][1],
+                cantidad,
+                self.treeview_barra_abajo.item(x)["values"][3],
+                self.treeview_barra_abajo.item(x)["values"][2],
+                fecha,
+                self.login["id"]
+            )
+            info  = db.busqueda_id("ropa", codigo)
+            if info:
+                db.actualizar_ropa(codigo, stock=(int(info[4]) - cantidad))
+            else:
+                info = db.busqueda_id("accesorios", codigo)
+                db.actualizar_accesorios(codigo, stock=(int(info[3]) - cantidad))
+
         for x in id: self.treeview_barra_abajo.delete(x)
-        for x in treeview.get_children(""): treeview.delete(x)
         self.var_texto_total.set(0.0)
-        self.insertar_treeview((self.ropa,self.accesorios), self.treeview)
-        Importador.actualizar_stock(self.ropa, "ropa")
-        Importador.actualizar_stock(self.accesorios, "accesorios")
+        self.insertar_treeview(("ropa", "accesorios"), self.treeview)
     
-    def busqueda(self, datos : list[list,list], treeview : ttk.Treeview, palabra : str):
+    def busqueda(self, tablas : list[str,str], treeview : ttk.Treeview, palabra : str):
         nueva_lista = []
-        vocales = [("á","a"),("é","e"),("í","i"),("ó","o"),("ú","u")]
-        for lista in datos:
-            for producto in lista:
-                nombre = producto.get_descripcion().lower()
-                for acento, vocal in vocales:
-                    if acento in nombre:
-                        cantidad = producto.get_descripcion().count(acento)
-                        for y in range(cantidad):
-                            index = producto.get_descripcion().index(acento)
-                            nombre = producto.get_descripcion()[:index] + vocal + producto.get_descripcion()[index:]
-                if palabra.lower() in  nombre:
-                    nueva_lista.append(producto)
-        
-        for id in treeview.get_children(""): treeview.delete(id)
+        for tabla in tablas:
+            if tabla == "ropa":
+                for datos in db.busqueda_texto(tabla, palabra): nueva_lista.append(Ropa(*datos))
+            elif tabla == "accesorios":
+                for datos in db.busqueda_texto(tabla, palabra): nueva_lista.append(Accesorio(*datos))
             
-        self.insertar_treeview((nueva_lista,), treeview)
+        self.insertar_treeview((nueva_lista,), treeview, False)
         
     
     def area_venta(self):
@@ -565,7 +586,7 @@ class App(tk.Tk):
         self.treeview = ttk.Treeview(frame_izq, columns=["stock", "nombre", "precio", "material", "genero", "talle"])
         
         var_buscador.trace_add("write",lambda a,b,c: self.busqueda(
-                (self.ropa, self.accesorios,),
+                ("ropa", "accesorios"),
                 self.treeview,
                 var_buscador.get()
                 )
@@ -594,7 +615,7 @@ class App(tk.Tk):
         self.treeview.column("genero", anchor="center")
         self.treeview.column("material", anchor="center")
         
-        self.insertar_treeview((self.ropa, self.accesorios), self.treeview)
+        self.insertar_treeview(("ropa", "accesorios"), self.treeview)
         
         self.treeview.pack(padx=15, expand=True, fill="both")
         btn_agregar.pack(padx=15, pady=15)
@@ -606,7 +627,7 @@ class App(tk.Tk):
         frame_izq.pack(side="left", fill="both",expand=True)
         frame_der.pack(side="right", fill="both")
     
-    def ver_productos(self, lista_productos):
+    def ver_productos(self, lista_productos, tabla):
         var_busqueda = tk.StringVar()
         frame_arriba = tk.Frame(self.frame_area_trabajo, bg="#fff")
         frame_izq = tk.Frame(self.frame_area_trabajo, bg="#fff")
@@ -618,7 +639,7 @@ class App(tk.Tk):
         self.treeview = ttk.Treeview(frame_izq, columns=["stock", "nombre", "precio", "material", "genero", "talle"])
         
         var_busqueda.trace_add("write", lambda a,b,c: self.busqueda(
-                (lista_productos,),
+                (tabla,),
                 self.treeview,
                 var_busqueda.get()
             )
@@ -639,7 +660,7 @@ class App(tk.Tk):
         self.treeview.column("genero", anchor="center")
         self.treeview.column("material", anchor="center")
         
-        self.insertar_treeview((lista_productos,), self.treeview)
+        self.insertar_treeview((tabla,), self.treeview)
         
         self.treeview.pack(padx=15, expand=True, fill="both", pady=5)
         buscador.pack(pady=15, ipadx=5)
