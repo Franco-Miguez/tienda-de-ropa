@@ -185,11 +185,11 @@ class App(tk.Tk):
     
     def btn_ver_prendas(self):
         self.limpiar_area_trabajo()
-        self.ver_productos(self.ropa, "ropa")
+        self.ver_productos("ropa")
     
     def btn_ver_accesorios(self):
         self.limpiar_area_trabajo()
-        self.ver_productos(self.accesorios, "accesorios")
+        self.ver_productos("accesorios")
     
     def __cambio_area_info(self, frame_info, var_genero, var_talle, var_material, producto_seleccionado):
         for x in frame_info.winfo_children(): x.destroy()
@@ -226,41 +226,23 @@ class App(tk.Tk):
         except:
             pass
         if producto == "ropa":
-            Importador.exportar(nombre, stock, precio, genero, talle, "", codigo)
-            for ropa in self.ropa:
-                if ropa.get_codigo() == codigo:
-                    index = self.ropa.index(ropa)
-                    self.ropa[index].set_talle(talle)
-                    self.ropa[index].set_genero(genero)
-                    self.ropa[index].set_precio(precio)
-                    self.ropa[index].set_stock(stock)
-                    self.ropa[index].set_descripcion(nombre)
+            db.actualizar_ropa(codigo, talle, genero, precio, stock, nombre )
         else:
-            Importador.exportar(nombre, stock, precio, "", "", material, codigo)
-            for accesorio in self.accesorios:
-                if accesorio.get_codigo() == codigo:
-                    index = self.accesorios.index[ropa]
-                    self.accesorios[index].set_materila(material)
-                    self.accesorios[index].set_precio(precio)
-                    self.accesorios[index].set_stock(stock)
-                    self.accesorios[index].set_descripcion(nombre)
+            db.actualizar_accesorios(codigo, material, precio, stock, nombre)
         ventana.destroy()
         
     
     def agregar_stock(self, path, codigo, nombre, stock, precio, material, talle, genero, producto, ventana):
         try:
             with Image.open(path) as img:
-                img.show()
                 img = img.resize((35,35))
                 img.save(f"./assets/img/{codigo}.png")
         except:
             pass
         if producto == "ropa":
-            Importador.exportar(nombre, stock, precio, genero, talle, "", codigo)
-            self.ropa.append( Ropa(codigo, talle, genero, precio, stock, nombre))
+            db.agregar_stock_ropa(codigo, talle, genero, precio, stock, nombre)
         else:
-            Importador.exportar(nombre, stock, precio, "", "", material, codigo)
-            self.accesorios.append( Accesorio(codigo, material, precio, stock, nombre))
+            db.agregar_stock_accesorio(codigo, material, precio, stock, nombre)
         self.login["permisos"] = False 
         ventana.destroy()
     
@@ -362,7 +344,7 @@ class App(tk.Tk):
         imagen.pack(pady=15)
         tk.Label(ventana, text="Codigo", bg=COLOR_BARRA_IZQ, fg="white").pack()
         codigo = tk.Entry(ventana)
-        codigo.insert(0,Importador.generar_codigo())
+        codigo.insert(0,db.generar_codigo())
         codigo.config(state=tk.DISABLED)
         codigo.pack(pady=15)
         tk.Label(ventana, text="Nombre", bg=COLOR_BARRA_IZQ, fg="white").pack()
@@ -627,7 +609,7 @@ class App(tk.Tk):
         frame_izq.pack(side="left", fill="both",expand=True)
         frame_der.pack(side="right", fill="both")
     
-    def ver_productos(self, lista_productos, tabla):
+    def ver_productos(self, tabla):
         var_busqueda = tk.StringVar()
         frame_arriba = tk.Frame(self.frame_area_trabajo, bg="#fff")
         frame_izq = tk.Frame(self.frame_area_trabajo, bg="#fff")

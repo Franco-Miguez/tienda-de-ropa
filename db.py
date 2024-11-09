@@ -90,16 +90,20 @@ def agregar_usuario(nombre, contrasena, permiso):
     """
     cursor.execute(sql, datos)
     conector.commit()
+    return True
 
 def eliminar(codigo, tabla):
     """
         Elimina con referencia de id
     """
     
-    sql = """
-    DELETE FROM ? WHERE id = ?
-    """
-    cursor.execute(sql, (tabla, codigo))
+    sql = f"DELETE FROM {tabla} WHERE id = '{codigo}'"
+    cursor.execute(sql)
+    conector.commit()
+
+def actualizar_usuario(codigo, permiso, contrasena):
+    sql = f"update usuarios set permiso = {permiso}, contrasena = '{contrasena}' WHERE id = '{codigo}'"
+    cursor.execute(sql)
     conector.commit()
 
 def actualizar_ropa(codigo, talle = "", genero = "", precio = "", stock = "", descripcion = ""):
@@ -169,8 +173,8 @@ def datos(tabla) -> list:
     info = cursor.fetchall()
     return info
 
-def busqueda_id(tabla,id):
-    sql = f"SELECT * FROM {tabla} WHERE {id}"
+def busqueda_id(tabla,id) -> tuple:
+    sql = f"SELECT * FROM {tabla} WHERE id = '{id}'"
     cursor.execute(sql)
     info = cursor.fetchone()
     return info
@@ -204,5 +208,17 @@ def exportar_ventas_csv(ruta):
 
             escribir.writerow(nueva_lista)
 
+
+def generar_codigo():
+    ropa = datos("ropa")
+    accesorios = datos("accesorios")
+    codigo = "000"
+    if int(ropa[-1][0]) > int(accesorios[-1][0]):
+        codigo += str(int(ropa[-1][0]) + 1)
+    else:
+        codigo += str(int(accesorios[-1][0]) + 1)
+    
+    return codigo[-3:]
+
 if __name__ == "__main__":
-    print(busqueda_id("accesro","001")[4])
+    print(busqueda_id("usuarios","Ana"))

@@ -3,6 +3,7 @@ from tkinter import Toplevel, ttk, messagebox
 import tkinter as tk
 from importador import Importador
 from constantes import *
+import db
 
 class VentanaUsuarios(Toplevel):
     def __init__(self):
@@ -19,8 +20,12 @@ class VentanaUsuarios(Toplevel):
         self.treeview.column("admin", width=90)
         self.treeview.column("contrasena", width=90)
 
-        for usuario, permiso,contrasena in Importador.importar_usuarios():
-            self.treeview.insert("", tk.END, text=usuario, values=[permiso, contrasena])
+        for usuario, permiso,contrasena in db.datos("usuarios"):
+            self.treeview.insert("", tk.END, text=usuario,
+                                values=[
+                                    "Si" if permiso else "No",
+                                    "*" * len(contrasena)
+                                    ])
         
         self.treeview.pack(side="left", expand=True, fill="both", padx=5, pady=5)
         frame = tk.Frame(self, bg=COLOR_BARRA_IZQ)
@@ -30,20 +35,20 @@ class VentanaUsuarios(Toplevel):
         
         btns[0].config(command=lambda : self.__agregar_actualizar_usuario())
         btns[1].config(command=lambda : self.__agregar_actualizar_usuario(
-            self.treeview.item(self.treeview.focus())["text"],
-            self.treeview.item(self.treeview.focus())["values"][0],
-            self.treeview.item(self.treeview.focus())["values"][1]
+            self.treeview.item(self.treeview.focus())["text"]
         ))
         btns[-1].config(command=lambda: self.__eliminar_usuario(self.treeview))
         
         
         frame.pack(side="right", fill="y", ipadx=5)
     
-    def __agregar_actualizar_usuario(self, nombre = "", admin=False, contrasena = ""):
+    def __agregar_actualizar_usuario(self, nombre = ""):
+        nombre, admin, contrasena = db.busqueda_id("usuarios", nombre) if nombre else ("",0,"")
         var_admin = tk.BooleanVar()
         var_admin.set(admin)
         text_btn = "Agregar" if not nombre else "Actualizar"
         ventana = Toplevel(self, bg=COLOR_BARRA_IZQ, padx=20,pady=20)
+        ventana.geometry("250x250")
         tk.Label(ventana, text="Nombre:", bg=COLOR_BARRA_IZQ, fg="white").pack()
         _usuario = tk.Entry(ventana)
         _usuario.insert(0,nombre)
@@ -67,25 +72,39 @@ class VentanaUsuarios(Toplevel):
     
     def __btn_agregar_actualizar(self, text_btn, nombre, usuario, permiso, contrasena, ventana):
         if text_btn == "Agregar":
-            if Importador.agregar_usuario(usuario, permiso, contrasena):
-                self.treeview.insert("", "end", text=usuario, values=(permiso,contrasena))
-                ventana.destroy()
+            for db_usuario, db_permiso, db_contrasena in db.datos("usuarios"):
+                if db_usuario == usuario:
+                    messagebox.showinfo("Cuidad", "Ese nombre de usuario ya esta en uso")
             else:
-                messagebox.showinfo("Cuidad", "Ese nombre de usuario ya esta en uso")
+                db.agregar_usuario(usuario, contrasena, permiso)
+                self.treeview.insert("", "end", text=usuario,
+                                    values=
+                                    (
+                                        "Si" if permiso else "NO",
+                                        "*" * len(contrasena)
+                                    ))
+                ventana.destroy()
+                return True
         else:
-            Importador.actualizar_usuario(nombre, usuario, permiso, contrasena)
+            db.actualizar_usuario(nombre, permiso, contrasena)
             item = self.treeview.focus()
-            self.treeview.item(item, text=usuario, values=(permiso,contrasena))
+            self.treeview.item( item,
+                                text=usuario,
+                                values=
+                                (
+                                    "Si" if permiso else "No",
+                                    "*" * len(contrasena)
+                                    ))
             ventana.destroy()
         
 
     def __eliminar_usuario(self,treeview):
         id = treeview.focus()
         usuario = treeview.item(id)
-        for user, permiso, contrasena in  Importador.importar_usuarios():
-            if permiso == "True" and user != usuario["text"]:
+        for user, permiso, contrasena in  db.datos("usuarios"):
+            if permiso and user != usuario["text"]:
                 if messagebox.askokcancel("Eliminar", f"Decea eliminar al usuario {usuario['text']}", icon="warning"):
-                    Importador.eliminar_usuario(usuario["text"])
+                    db.eliminar( usuario['text'], "usuarios")
                     treeview.delete(id)
                     return None
                 else: return None
