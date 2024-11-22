@@ -28,9 +28,9 @@ class TablaStock(ttk.Treeview):
         self.column("genero", anchor="center")
         self.column("material", anchor="center")
         
-        self.insertar_treeview(tablas, self)
+        self.insertar_stock(tablas)
 
-    def insertar_treeview(self,tablas : list[str,str], treeview, es_tabla = True):
+    def insertar_stock(self,tablas : list[str,str], es_tabla = True):
         """toma por defectios talbas y las tranforma a objetos luego los suma a el treeview, se le puede pasar objetos poniendo en false es tabla
 
         Args:
