@@ -4,12 +4,10 @@ from constantes import *
 from PIL import Image, ImageTk
 from productos.ropa import Ropa
 from productos.accesorio import Accesorio
-import os
-from ventana_usuarios import VentanaUsuarios
 from datetime import datetime
 import db
 from tabla_stock import TablaStock
-from modificar_agregar_stock import ModificarAgregar
+from barra_izquierda import FrameIzquierdo
 
 class App(tk.Tk):
     def __init__(self):
@@ -24,8 +22,6 @@ class App(tk.Tk):
         self.configure(bg=COLOR_BACKGROUND) 
         style = ttk.Style()
         style.configure("Treeview", rowheight=42)
-        
-        self.usuario = None
     
         self.login = dict()
         self.login["validacion"] = False 
@@ -33,43 +29,10 @@ class App(tk.Tk):
         self.login["id"] = None
 
         self.img = None
-        self.ropa = [Ropa(*x) for x in db.datos("ropa")]
-
-        self.ANCHO_BARRA = int(self.ANCHO_ROOT / 5)
-
-        self.lista_btn_izquierda = ["Ver Prendas", "Ver Accesorios", "Realizar Ventas", "Agregar Articulos", "Modificar Articulos", "Cambiar Usuario" ,"Cambiar Permisos", "Salir"]
+        self.ropa = [Ropa(*x) for x in db.datos("ropa")]   
         
-        
-        
-        self.barra_izquierda()
+        self.frame_izquierdo = FrameIzquierdo(self)
         self.ventana_verificar_usuario(self.imprimir, False)
-    
-    def barra_izquierda(self):
-        self.frame_barra_izquierda = tk.Frame(self, width=f"{self.ANCHO_BARRA}", height=f"{self.ALTO_ROOT}", bg=COLOR_BARRA_IZQ, border=2)
-
-        btn_lista_izquierda = [tk.Button(
-            self,
-            text=f"{self.lista_btn_izquierda[x]}",
-            bg=COLOR_BUTTON,
-            fg="white",
-            height=1,
-            width=ANCHO_BUTTON,
-            font=(LETRA,TAMANIO,ESTILO),
-            border=5
-            ) for x in range(len(self.lista_btn_izquierda))]
-        for x in range(len(btn_lista_izquierda)):
-            btn_lista_izquierda[x].place(x=10, y=60*(x+1))
-        
-        self.text_usuario = tk.Label(self.frame_barra_izquierda, text=f"Usuario: {self.usuario}", bg=COLOR_BARRA_IZQ, fg="white" ,font=(LETRA,TAMANIO,ESTILO))
-        
-        btn_lista_izquierda[0].config(command=self.btn_ver_prendas)
-        btn_lista_izquierda[1].config(command=self.btn_ver_accesorios)
-        btn_lista_izquierda[2].config(command=self.btn_realizar_venta)
-        btn_lista_izquierda[3].config(command= lambda : ModificarAgregar(self) if self.login["permisos"] else messagebox.showinfo("Permisos", "No tienes los persmisos requeridos") )
-        btn_lista_izquierda[4].config(command= lambda : self.btn_modificar_articulo() if self.login["permisos"] else messagebox.showinfo("Permisos", "No tienes los persmisos requeridos"))
-        btn_lista_izquierda[-3].config(command=lambda : self.ventana_verificar_usuario(None, False))
-        btn_lista_izquierda[-2].config(command=lambda :self.btn_cambiar_permisos() if self.login["permisos"] else messagebox.showinfo("Permisos", "No tienes los persmisos requeridos"))
-        btn_lista_izquierda[-1].config(command=self.quit)
     
     def limpiar_area_trabajo(self):
         for x in self.frame_area_trabajo.winfo_children(): x.destroy()
@@ -91,8 +54,8 @@ class App(tk.Tk):
         usuarios = db.datos("usuarios")
         for u , p , c in usuarios:
             if usuario == u and contrasena == c:
-                self.usuario = u
-                self.text_usuario.config(text=f"Usuario: {u}")
+                self.frame_izquierdo.usuario = u
+                self.frame_izquierdo.text_usuario.config(text=f"Usuario: {u}")
                 self.login["validacion"] =  True 
                 self.login["permisos"] =  bool(p)
                 self.login["id"] = u
@@ -128,202 +91,7 @@ class App(tk.Tk):
         btn_cancelar = tk.Button(ventana, text="cancelar", command = lambda : ventana.destroy())
         btn_cancelar.pack(side="left", padx=10)
         
-    
-    def btn_realizar_venta(self):
-        self.limpiar_area_trabajo()
-        self.area_venta()
-        self.barra_abajo()
-        self.frame_barra_abajo.pack_propagate(False)
-        self.frame_barra_abajo.pack(side="bottom", fill="x")
-    
-    def btn_ver_prendas(self):
-        self.limpiar_area_trabajo()
-        self.ver_productos(("ropa",))
-    
-    def btn_ver_accesorios(self):
-        self.limpiar_area_trabajo()
-        self.ver_productos(("accesorios",))
-    '''
-    def __cambio_area_info(self, frame_info, var_genero, var_talle, var_material, producto_seleccionado):
-        for x in frame_info.winfo_children(): x.destroy()
-        if producto_seleccionado == "accesorio":
-            tk.Label(frame_info, text="Material", bg=COLOR_BARRA_IZQ, fg="white").pack()
-            material = ttk.Combobox(frame_info, textvariable=var_material, values=["Plástico", "Metal", "Cuero"], state="readonly")
-            material.pack(pady=15)
-        else:
-            tk.Label(frame_info, text="Talle", bg=COLOR_BARRA_IZQ, fg="white").pack()
-            talle = ttk.Combobox(frame_info, textvariable=var_talle, values=["S", "M", "L", "XL"], state="readonly")
-            talle.pack(pady=15)
-            rbtn_masculino = tk.Radiobutton(
-                frame_info, text="Hombre", value="Hombre", variable=var_genero,  bg=COLOR_BARRA_IZQ, fg="white",
-                selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white",
-                )
-            rbtn_femenino = tk.Radiobutton(
-                frame_info, text="Mujer", value="Mujer", variable=var_genero,  bg=COLOR_BARRA_IZQ, fg="white",
-                selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white",
-                )
-            rbtn_unisex = tk.Radiobutton(
-                frame_info, text="Unisex", value="Unisex", variable=var_genero,  bg=COLOR_BARRA_IZQ, fg="white",
-                selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white",
-                )
-            
-            rbtn_masculino.pack(side="left")
-            rbtn_unisex.pack(side="left")
-            rbtn_femenino.pack()
-    '''
 
-    '''
-    def seleccionar_imagen(self, button):
-        path = filedialog.askopenfilename(
-                title="Selecione Imagen",
-                filetypes=(("image", ("*.jpg", "*.jpeg", "*.png", "*.gif")),)
-                )
-        self.img = Image.open(path).resize((40,40))
-        self.img = ImageTk.PhotoImage(self.img)
-        button.config( image=self.img, text=path)
-
-    def ventana_modificar_articulo(self, codigo = "", nombre = "", stock = "",
-                                precio = "", genero="", talle="", material = ""):
-        var_producto = tk.StringVar()
-        var_producto.set("accesorio") if genero == "" else var_producto.set("ropa")
-        var_genero = tk.StringVar(value=genero)
-        var_talle = tk.StringVar(value=talle)
-        var_material = tk.StringVar(value=material)
-        ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
-        ventana.geometry(f"300x600+{self.ANCHO_ROOT//2-150}+{self.ALTO_ROOT//2-250}")
-        tk.Label(ventana, text="Imagen:", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        imagen = tk.Button(ventana, text="Selecione Imagen", command= lambda: self.seleccionar_imagen(imagen))
-        imagen.pack(pady=15)
-        tk.Label(ventana, text="Codigo", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        _codigo = tk.Entry(ventana)
-        _codigo.insert(0, db.generar_codigo()) if codigo == "" else  _codigo.insert(0, codigo)
-        _codigo.config(state=tk.DISABLED)
-        _codigo.pack(pady=15)
-        tk.Label(ventana, text="Nombre", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        _nombre = tk.Entry(ventana)
-        if nombre != "": _nombre.insert(0, nombre)
-        _nombre.pack(pady=15)
-        tk.Label(ventana, text="Stock", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        _stock = tk.Entry(ventana)
-        if stock != "": _stock.insert(0, stock)
-        _stock.pack(pady=15)
-        tk.Label(ventana, text="Precio", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        _precio = tk.Entry(ventana)
-        if precio != "": _precio.insert(0, precio)
-        _precio.pack(pady=15)
-        frame_rbtn = tk.Frame(ventana, bg=COLOR_BARRA_IZQ)
-        rbtn_accesorio = tk.Radiobutton(
-            frame_rbtn, text="Accesorio", value="accesorio", variable=var_producto, state="disabled",  bg=COLOR_BARRA_IZQ, fg="white",
-            selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white"
-            )
-        rbtn_ropa = tk.Radiobutton(
-            frame_rbtn, text="Ropa", value="ropa", variable=var_producto, state="disabled", bg=COLOR_BARRA_IZQ, fg="white",
-            selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white"
-            )
-        rbtn_accesorio.pack(side="left")
-        rbtn_ropa.pack(side="left")
-        frame_rbtn.pack()
-        frame_info = tk.Frame(ventana, bg=COLOR_BARRA_IZQ)
-        self.__cambio_area_info(frame_info,var_genero, var_talle, var_material, var_producto.get())
-
-        frame_info.pack()
-        var_producto.trace_add("write", lambda a,b,c: self.__cambio_area_info(frame_info, var_genero, var_talle, var_material, var_producto.get()))
-        
-        btn_agregar = tk.Button(ventana, text="Agregar", bg=COLOR_BUTTON, fg="white",
-                command=lambda: self.modificar_stock(
-                    imagen.cget("text"), _codigo.get(), _nombre.get(), _stock.get(), _precio.get(), var_material.get(), var_talle.get(), var_genero.get(), var_producto.get(), ventana)
-            )
-        btn_cancelar = tk.Button(ventana, text="Cancelar", bg=COLOR_BUTTON, fg="white", command=ventana.destroy)
-
-        btn_cancelar.pack(side="left", padx=15)
-        btn_agregar.pack(side="right", padx=15)
-'''
-    def btn_modificar_articulo(self):
-        try: 
-            id = self.treeview.focus()
-            if id == "": raise 
-        except:
-            messagebox.showinfo("Cuidado", "No a seleccionado ningun articulo de alguna lista")
-            return 0
-        item = self.treeview.item(id)
-        ventana = ModificarAgregar(
-            self,
-            item["text"],
-            item["values"][1],
-            item["values"][0],
-            item["values"][2],
-            item["values"][4],
-            item["values"][5],
-            item["values"][3],
-            False)
-        '''
-        self.ventana_modificar_articulo(
-            item["text"],
-            item["values"][1],
-            item["values"][0],
-            item["values"][2],
-            item["values"][4],
-            item["values"][5],
-            item["values"][3],
-            
-        )
-
-    def btn_agregar_articulo(self):
-        var_producto = tk.StringVar()
-        var_producto.set("accesorio")
-        var_genero = tk.StringVar()
-        var_talle = tk.StringVar()
-        var_material = tk.StringVar()
-        ventana = tk.Toplevel(self, bg=COLOR_BARRA_IZQ)
-        ventana.geometry(f"300x600+{self.ANCHO_ROOT//2-150}+{self.ALTO_ROOT//2-250}")
-        tk.Label(ventana, text="Imagen:", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        imagen = tk.Button(ventana, text="Selecione Imagen", command= lambda: self.seleccionar_imagen(imagen))
-        imagen.pack(pady=15)
-        tk.Label(ventana, text="Codigo", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        codigo = tk.Entry(ventana)
-        codigo.insert(0,db.generar_codigo())
-        codigo.config(state=tk.DISABLED)
-        codigo.pack(pady=15)
-        tk.Label(ventana, text="Nombre", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        nombre = tk.Entry(ventana)
-        nombre.pack(pady=15)
-        tk.Label(ventana, text="Stock", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        stock = tk.Entry(ventana)
-        stock.pack(pady=15)
-        tk.Label(ventana, text="Precio", bg=COLOR_BARRA_IZQ, fg="white").pack()
-        precio = tk.Entry(ventana)
-        precio.pack(pady=15)
-        frame_rbtn = tk.Frame(ventana, bg=COLOR_BARRA_IZQ)
-        rbtn_accesorio = tk.Radiobutton(
-            frame_rbtn, text="Accesorio", value="accesorio", variable=var_producto,  bg=COLOR_BARRA_IZQ, fg="white",
-            selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white"
-            )
-        rbtn_ropa = tk.Radiobutton(
-            frame_rbtn, text="Ropa", value="ropa", variable=var_producto,  bg=COLOR_BARRA_IZQ, fg="white",
-            selectcolor=COLOR_BARRA_IZQ, activebackground=COLOR_BARRA_IZQ, activeforeground="white"
-            )
-        rbtn_accesorio.pack(side="left")
-        rbtn_ropa.pack(side="left")
-        frame_rbtn.pack()
-        frame_info = tk.Frame(ventana, bg=COLOR_BARRA_IZQ)
-        
-
-        frame_info.pack()
-        var_producto.trace_add("write", lambda a,b,c: self.__cambio_area_info(frame_info, var_genero, var_talle, var_material, var_producto.get()))
-        
-        btn_agregar = tk.Button(ventana, text="Agregar", bg=COLOR_BUTTON, fg="white",
-                command=lambda: self.agregar_stock(
-                    imagen.cget("text"), codigo.get(), nombre.get(), stock.get(), precio.get(), var_material.get(), var_talle.get(), var_genero.get(), var_producto.get(), ventana)
-            )
-        btn_cancelar = tk.Button(ventana, text="Cancelar", bg=COLOR_BUTTON, fg="white", command=ventana.destroy)
-
-        btn_cancelar.pack(side="left", padx=15)
-        btn_agregar.pack(side="right", padx=15)
-    '''
-    
-    def btn_cambiar_permisos(self):
-        ventana = VentanaUsuarios()
-    
     def verificador_Agregar(self, info, cantidad, descuento, precio, ventana) -> int:
         if not cantidad.get().isdecimal() or int(cantidad.get()) <= 0:
             messagebox.showwarning("Cantidad no valida", "La cantidad tiene que ser mayor que 0")
@@ -576,10 +344,7 @@ class App(tk.Tk):
 
     def imprimir(self):
         self.area_trabajo()
-        self.frame_barra_izquierda.pack(side="left")
-        self.frame_barra_izquierda.pack_propagate(False)
         self.frame_area_trabajo.pack(side="top", fill="both", expand=True)
-        self.text_usuario.pack(side="bottom", pady=10)
 
 if __name__ == "__main__":
     app = App()
