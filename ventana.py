@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 from productos.ropa import Ropa
 from productos.accesorio import Accesorio
 from datetime import datetime
-import db
+import orm as db
 from tabla_stock import TablaStock
 from barra_izquierda import FrameIzquierdo
 
@@ -29,7 +29,15 @@ class App(tk.Tk):
         self.login["id"] = None
 
         self.img = None
-        self.ropa = [Ropa(*x) for x in db.datos("ropa")]   
+        self.ropa = [
+            Ropa(
+                x.id,
+                x.talle,
+                x.genero,
+                x.precio,
+                x.stock,
+                x.descripcion
+                ) for x in db.datos("ropa")]   
         
         self.frame_izquierdo = FrameIzquierdo(self)
         self.ventana_verificar_usuario(self.imprimir, False)
@@ -52,7 +60,10 @@ class App(tk.Tk):
             administrador (bool): True si se ejecuta si es administrador False si no es nesesario serlo
         """
         usuarios = db.datos("usuarios")
-        for u , p , c in usuarios:
+        for x in usuarios:
+            u = x.nombre
+            c = x.contrasena
+            p = x.permiso
             if usuario == u and contrasena == c:
                 self.frame_izquierdo.usuario = u
                 self.frame_izquierdo.text_usuario.config(text=f"Usuario: {u}")

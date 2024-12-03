@@ -1,4 +1,4 @@
-from peewee import SqliteDatabase, Model, CharField, BooleanField, FloatField, IntegerField, Check, DateTimeField, ForeignKeyField
+from peewee import SqliteDatabase, Model, CharField, BooleanField, FloatField, IntegerField,  DateTimeField, ForeignKeyField
 import csv
 
 TALLES = [('s','S'), ('m','M'), ('l','L'), ('xl', 'XL')]
@@ -15,18 +15,18 @@ class Usuario(Model):
         database = db
 
 class Ropa(Model):
-    talle = CharField(max_length=5, choise=TALLES)
-    genero = CharField(max_length=10, choise=GENEROS)
+    talle = CharField(max_length=5)
+    genero = CharField(max_length=10 )
     precio = FloatField()
-    stock =  IntegerField(constraints=Check('stock >= 0'), default=0)
+    stock =  IntegerField( default=0)
     descripcion = CharField(max_length=50)
     class Meta:
         database = db
 
 class Accesorio(Model):
-    material =  CharField(max_length=10, choise=MATERIALES)
+    material =  CharField(max_length=10)
     precio = FloatField()
-    stock = IntegerField(constraints=Check('stock >= 0'), default=0)
+    stock = IntegerField( default=0)
     descripcion =  CharField(max_length=50)
     class Meta:
         database = db
@@ -150,6 +150,12 @@ def importar_datos_csv(ruta):
                     agregar_stock_accesorio(codigo, material, precio, stock, descripcion)
 
 def datos(tabla : object) -> list:
+    if tabla == "ropa":
+        tabla = Ropa
+    elif tabla == "usuarios":
+        tabla = Usuario
+    elif tabla == "ventas":
+        tabla = Ventas
     return tabla.select()
 
 def busqueda_id(tabla,id) -> tuple:
@@ -204,4 +210,4 @@ def generar_codigo():
     return codigo[-3:]
 
 if __name__ == "__main__":
-    print(busqueda_id("usuarios","Ana"))
+    agregar_usuario("Ana","asdf",True)
